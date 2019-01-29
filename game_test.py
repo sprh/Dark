@@ -1,10 +1,12 @@
-import pygame, time, threading, random
+import pygame, time, threading, random, math
 from pygame.locals import *
 NUM = 0
 
 
+
 def init_window():
     pygame.init()
+    pygame.mouse.set_visible(False)
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     pygame.display.set_caption('Game')
 
@@ -30,6 +32,7 @@ def ACTION():
                     NUM = False
                 else:
                     NUM = False
+                    screen.fill((0, 0, 0))
                     HISTORY()
             elif event.type == QUIT:
                 NUM = False
@@ -119,8 +122,76 @@ def HISTORY():
         pygame.display.flip()
 
 
+class Main_Hero(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        self.mas_hero = [((235, 192, 106), (0, 0), 30),
+                ((199, 165, 97), (-25, 0, 20, 20)),
+                ((199, 165, 97), (5, -15, 20, 20)),
+                ((247, 238, 215), (0, 0), 20),
+                ((199, 165, 97), (-10, -30, 10, 10)),
+                ((247, 238, 215), (5, 15, 10, 10)),
+                ((247, 238, 215), (15, - 15, 12, 12)),
+                ((247, 238, 215), (20, -20, 5, 5)),
+                ((247, 238, 215), (-20, -25, 15, 15)),
+                ((199, 165, 97), (-10, 15, 10, 10)),
+                ((199, 165, 97), (-5, 5, 5, 5)),
+                ((199, 165, 97), (5, -10, 10, 10)),
+                ((199, 165, 97), (-5, 0, 5, 5))]
+        self.hero_x = x
+        self.hero_y = y
+        self.mas = [((255, 255, 255), (30, 95, 5, 5), 20), ((240, 220, 130), (35, 90, 15, 15), 40),
+               ((199, 165, 97), (45, 100, 10, 10), 30), ((240, 220, 130), (25, 115, 15, 15), 10),
+               ((255, 255, 255), (50, 140, 10, 10), 30), ((199, 165, 97), (45, 135, 10, 10), 40),
+               ((255, 255, 255), (65, 130, 10, 10), 50), ((255, 255, 255), (70, 100, 5, 5), 20)]
+        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        self.screen.fill((0, 0, 0))
+
+    def INIT_PLAY(self, cl):
+        running = True
+        self.screen.fill(pygame.Color("black"))
+        cl = cl / 1000
+        mas_1 = []
+        for i in range(len(self.mas_hero)):
+            el = self.mas_hero[i]
+            if i == 0 or i == 3:
+                pygame.draw.circle(self.screen, el[0], (round(self.hero_x), round(self.hero_y)), el[2])
+            else:
+                x, y, raz_1, raz_2 = el[1]
+                pygame.draw.rect(self.screen, el[0], (round(self.hero_x + x), round(self.hero_y + y), raz_1, raz_2))
+        for el in self.mas:
+            color, items, rad = el
+            x, y, raz_1, raz_2 = items
+            print(items)
+            x += 50 * cl
+            y += 50 * cl
+            pygame.draw.rect(self.screen, color, (round(self.hero_x - 50 + rad * math.sin(math.radians(x))),
+                                                   round(self.hero_y - 50 + rad * math.cos(math.radians(y))), raz_1, raz_2))
+            mas_1.append((color, (x, y, raz_1, raz_2), rad))
+        self.mas = mas_1[::]
+
+    def move(self, coords):
+        self.hero_x, self.hero_y = coords
+
+def Game_Start():
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    running = True
+    HERO = Main_Hero(150, 150)
+    clock = pygame.time.Clock()
+    while running:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
+            elif event.type == QUIT:
+                running = False
+        coords = pygame.mouse.get_pos()
+        HERO.move(coords)
+        HERO.INIT_PLAY(clock.tick())
+        pygame.display.flip()
+
+
 def main():
     init_window()
-    ACTION()
+    Game_Start()
 
 main()
