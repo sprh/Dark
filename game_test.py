@@ -1,10 +1,14 @@
 import pygame, time, threading, random, math
 from pygame.locals import *
+from pygame.math import Vector2
 NUM = 0
 
 
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
 
 def init_window():
+    #инициализация окна
     pygame.init()
     pygame.mouse.set_visible(False)
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -12,6 +16,7 @@ def init_window():
 
 
 def ACTION():
+    #начало игры
     NUM = True
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     font = pygame.font.SysFont('fixedsys', 40)
@@ -23,6 +28,7 @@ def ACTION():
     sec = 0
     fl = True
     while NUM:
+        # свет включается, выключается
         screen.fill((0, 0, 0))
         time.sleep(0.5)
         sec += 1
@@ -50,6 +56,7 @@ def ACTION():
             pygame.draw.ellipse(screen, (0, 0, 0), (160, 700, 280, 70))
         pygame.draw.rect(screen, (0, 0, 0), (250, 450, 100, 50))
         pygame.draw.polygon(screen, (255, 255, 255), [(300, 250), (175, 500), (425, 500)], 5)
+        # Вывод текста
         screen.blit(text, [700, 800])
         screen.blit(text1, [400, 200])
         screen.blit(text2, [650, 280])
@@ -60,6 +67,8 @@ def HISTORY():
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     running = True
     font = pygame.font.SysFont('monaco', 34)
+    # История. Первые строки сложно прочитать, они пропадают практически сразу же
+    # (сделано специально!)
     mas = 'Albert Einstein said that darkness does not exist.'
     mas_true = ['Darkness is merely the absence of light.', ' ',
                 'I disagree.', ' ',
@@ -91,6 +100,8 @@ def HISTORY():
             time.sleep(0.5)
             screen.fill((0, 0, 0))
             fl = False
+            # Все рисуется заново. Лампа выключается, тот же текст появляется на черном фоне -->
+            # у игрока появляется возможность прочитать
             pygame.draw.line(screen, (255, 255, 255), [300, 0], [300, 250], 5)
             pygame.draw.rect(screen, (255, 255, 255), (275, 250, 50, 15))
             pygame.draw.circle(screen, (255, 255, 255), (300, 500), 50, 5)
@@ -123,70 +134,117 @@ def HISTORY():
 
 
 class Main_Hero(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        self.mas_hero = [((235, 192, 106), (0, 0), 30),
-                ((199, 165, 97), (-25, 0, 20, 20)),
-                ((199, 165, 97), (5, -15, 20, 20)),
-                ((247, 238, 215), (0, 0), 20),
-                ((199, 165, 97), (-10, -30, 10, 10)),
-                ((247, 238, 215), (5, 15, 10, 10)),
-                ((247, 238, 215), (15, - 15, 12, 12)),
-                ((247, 238, 215), (20, -20, 5, 5)),
-                ((247, 238, 215), (-20, -25, 15, 15)),
-                ((199, 165, 97), (-10, 15, 10, 10)),
-                ((199, 165, 97), (-5, 5, 5, 5)),
-                ((199, 165, 97), (5, -10, 10, 10)),
-                ((199, 165, 97), (-5, 0, 5, 5))]
-        self.hero_x = x
-        self.hero_y = y
+    # Класс главного персонажа
+    def __init__(self):
+        self.BG_COLOR = pygame.Color(0, 0, 0)
+        # Сам персонаж - искра. Первый круг - ядро, второй - свечение.
+        self.BALL_1 = pygame.Surface((100, 100), pygame.SRCALPHA)
+        self.BALL_2 = pygame.Surface((100, 100), pygame.SRCALPHA)
+        pygame.draw.circle(self.BALL_1, [199, 180, 97], [40, 40], 40)
+        pygame.draw.circle(self.BALL_2, [255, 255, 255], [40, 40], 25)
+        # Квадраты, которые находятся внутри персонажа (персонаж так оформлен,
+        # Т к искра не имеет определенных очертаний)
+        self.mas_hero = [((199, 165, 70), (-25, 0, 20, 20)),
+                         ((199, 165, 65), (5, -15, 20, 20)),
+                         ((199, 165, 97), (-10, -30, 10, 10)),
+                         ((247, 238, 200), (5, 15, 10, 10)),
+                         ((247, 238, 215), (15, - 15, 12, 12)),
+                         ((247, 238, 215), (20, -20, 5, 5)),
+                         ((247, 238, 215), (-20, -25, 15, 15)),
+                         ((199, 165, 97), (-10, 15, 10, 10)),
+                         ((199, 165, 97), (-5, 5, 5, 5)),
+                         ((199, 165, 97), (5, -10, 10, 10)),
+                         ((199, 165, 97), (-5, 0, 5, 5))]
+        # За искрой тянется шлейф --> как свечение.
         self.mas = [((255, 255, 255), (30, 95, 5, 5), 20), ((240, 220, 130), (35, 90, 15, 15), 40),
-               ((199, 165, 97), (45, 100, 10, 10), 30), ((240, 220, 130), (25, 115, 15, 15), 10),
-               ((255, 255, 255), (50, 140, 10, 10), 30), ((199, 165, 97), (45, 135, 10, 10), 40),
-               ((255, 255, 255), (65, 130, 10, 10), 50), ((255, 255, 255), (70, 100, 5, 5), 20)]
-        self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-        self.screen.fill((0, 0, 0))
+                    ((199, 165, 97), (45, 100, 10, 10), 30),
+                    ((240, 220, 130), (25, 115, 15, 15), 10),
+                    ((255, 255, 255), (50, 140, 10, 10), 30),
+                    ((199, 165, 97), (45, 135, 10, 10), 40),
+                    ((255, 255, 255), (65, 130, 10, 10), 50),
+                    ((255, 255, 255), (70, 100, 5, 5), 20)]
+        # Переменные для шара
+        self.ball_pos = Vector2(275, 200)
+        self.ballrect = self.BALL_1.get_rect(center=self.ball_pos)
+        self.ball_vel = Vector2(0, 0)
+        self.ball_mask = pygame.mask.from_surface(self.BALL_1)
 
     def INIT_PLAY(self, cl):
-        running = True
-        self.screen.fill(pygame.Color("black"))
-        cl = cl / 1000
+        global screen
+        # Плавное движение персонажа
+        self.ball_vel *= .94
+        self.ball_pos += self.ball_vel
+        self.ballrect.center = self.ball_pos
+        screen.fill(self.BG_COLOR)
+        screen.blit(self.BALL_1, self.ballrect)
+        screen.blit(self.BALL_2, self.ballrect)
         mas_1 = []
-        for i in range(len(self.mas_hero)):
-            el = self.mas_hero[i]
-            if i == 0 or i == 3:
-                pygame.draw.circle(self.screen, el[0], (round(self.hero_x), round(self.hero_y)), el[2])
-            else:
-                x, y, raz_1, raz_2 = el[1]
-                pygame.draw.rect(self.screen, el[0], (round(self.hero_x + x), round(self.hero_y + y), raz_1, raz_2))
+        # Все части шлейфа находятся в постоянном движении. Движутся они по круговой орбите
         for el in self.mas:
             color, items, rad = el
             x, y, raz_1, raz_2 = items
-            print(items)
             x += 50 * cl
             y += 50 * cl
-            pygame.draw.rect(self.screen, color, (round(self.hero_x - 50 + rad * math.sin(math.radians(x))),
-                                                   round(self.hero_y - 50 + rad * math.cos(math.radians(y))), raz_1, raz_2))
+            pygame.draw.rect(screen, color, (round(self.ball_pos.x - 90 + rad
+                                                   * math.sin(math.radians(x))),
+                                             round(self.ball_pos.y - 60 + rad *
+                                                   math.cos(math.radians(y))), raz_1, raz_2))
             mas_1.append((color, (x, y, raz_1, raz_2), rad))
+        # Для осществления кругового движения массив постоянно обновляется
         self.mas = mas_1[::]
 
-    def move(self, coords):
-        self.hero_x, self.hero_y = coords
+        for i in self.mas_hero:
+            x, y, raz_1, raz_2 = i[1]
+            pygame.draw.rect(screen, i[0], (round(self.ball_pos.x + x),
+                                            round(self.ball_pos.y + y), raz_1, raz_2))
+        pygame.draw.circle(self.BALL_1, [199, 180, 97], [40, 40], 40)
+        pygame.draw.circle(self.BALL_2, [255, 255, 255], [40, 40], 25)
+
+    def move(self, wh):
+        # Осуществление движения персонажа
+        if wh == 'a':
+            self.ball_vel.x = -7
+        elif wh == 'd':
+            self.ball_vel.x = 8
+        elif wh == 'w':
+            self.ball_vel.y = -3
+        elif wh == 's':
+            self.ball_vel.y = 5
+        # Персонаж не может зайти за поле
+        if self.ballrect.top < 0 and self.ball_vel.y < 0:
+            self.ball_vel.y *= -1
+        elif self.ballrect.bottom > screen.get_height() and self.ball_vel.y > 0:
+            self.ball_vel.y *= -1
+        if self.ballrect.left < 0 and self.ball_vel.x < 0:
+            self.ball_vel.x *= -1
+        elif self.ballrect.right > screen.get_width() and self.ball_vel.x > 0:
+            self.ball_vel.x *= -1
+
 
 def Game_Start():
+    # Начало игры. Появление персонажа
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     running = True
-    HERO = Main_Hero(150, 150)
+    HERO = Main_Hero()
     clock = pygame.time.Clock()
     while running:
         for event in pygame.event.get():
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
+                if event.key == K_w:
+                    HERO.move('w')
+                elif event.key == K_s:
+                    HERO.move('s')
+                elif event.key == K_a:
+                    HERO.move('a')
+                elif event.key == K_d:
+                    HERO.move('d')
             elif event.type == QUIT:
                 running = False
         coords = pygame.mouse.get_pos()
         HERO.move(coords)
-        HERO.INIT_PLAY(clock.tick())
+        HERO.INIT_PLAY(clock.tick() / 1000)
         pygame.display.flip()
 
 
