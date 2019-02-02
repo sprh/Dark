@@ -1,4 +1,4 @@
-import pygame, time, threading, random, math
+import pygame, time, threading, random, math, os
 from pygame.locals import *
 from pygame.math import Vector2
 NUM = 0
@@ -19,8 +19,10 @@ def ACTION():
     #начало игры
     NUM = True
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    # Установление шрифта
     font = pygame.font.SysFont('fixedsys', 40)
     text = font.render('Press any key to start', True, (222, 218, 144))
+    # Увеличение шрифта
     font = pygame.font.SysFont('fixedsys', 80)
     text1 = font.render('"Can you manage the', True, (250, 238, 231))
     font = pygame.font.SysFont('fixedsys', 120)
@@ -28,9 +30,10 @@ def ACTION():
     sec = 0
     fl = True
     while NUM:
-        # свет включается, выключается
         screen.fill((0, 0, 0))
+        # Задержка. Сделана для того, чтоб изображать мигание света (включение/выключение лампы)
         time.sleep(0.5)
+        # После задержки увеличиваем на 1 переменную sec
         sec += 1
         for event in pygame.event.get():
             if event.type == KEYDOWN:
@@ -42,16 +45,20 @@ def ACTION():
                     HISTORY()
             elif event.type == QUIT:
                 NUM = False
+        # смотрим, сключена или выключена лампа (все зависит от переменной sec
         if sec % 4 == 0 or sec == 0:
             fl = False
         elif sec % 2 == 0:
             fl = True
+        # Рисуется линия + прямоугольник -- основание лампы
         pygame.draw.line(screen, (255, 255, 255), [300, 0], [300, 250], 5)
         pygame.draw.rect(screen, (255, 255, 255), (275, 250, 50, 15))
         if fl:
+            # Если лампа выключена (эллипс снизу - изображение свечения
             pygame.draw.circle(screen, (222, 218, 144), (300, 500), 50)
             pygame.draw.ellipse(screen, (217, 211, 189), (160, 700, 280, 70))
         else:
+            # Если лампа выключена
             pygame.draw.circle(screen, (255, 255, 255), (300, 500), 50, 5)
             pygame.draw.ellipse(screen, (0, 0, 0), (160, 700, 280, 70))
         pygame.draw.rect(screen, (0, 0, 0), (250, 450, 100, 50))
@@ -63,9 +70,13 @@ def ACTION():
         pygame.display.flip()
 
 
+# 2 часть вступления. История героя
 def HISTORY():
+    # загрузка звука печатания на клавиатуре
+    pygame.mixer.music.load('keyboard.mp3')
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     running = True
+    # установление шрифта
     font = pygame.font.SysFont('monaco', 34)
     # История. Первые строки сложно прочитать, они пропадают практически сразу же
     # (сделано специально!)
@@ -85,18 +96,31 @@ def HISTORY():
     coord = [520, 240]
     st = ''
     fl = True
+    # запуск звуковой дорожки. параметр -1 означает, что воспроизводится она бесконечное количество
+    # раз
+    pygame.mixer.music.play(-1, 0.0)
+    # Установление громкости
+    pygame.mixer.music.set_volume(0.1)
     while running:
         if len(st) != len(mas):
             st += mas[len(st)]
             time.sleep(0.05)
+        # Текст
         text = font.render(st, True, (0, 0, 0))
         for event in pygame.event.get():
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
+                else:
+                    # Если после того, как вся истрия появилась, игрок нажимает на любую кнопку,
+                    #  он переходит к началу игры
+                    if not fl and len(mas_true) == 0 and len(st) == len(mas):
+                        Game_Start()
             elif event.type == QUIT:
                 running = False
         if len(mas_true) == 0 and len(st) == len(mas):
+            # Остановка музыки
+            pygame.mixer.music.stop()
             time.sleep(0.5)
             screen.fill((0, 0, 0))
             fl = False
@@ -118,6 +142,7 @@ def HISTORY():
             text = font1.render('Press any key to resume', True, (222, 218, 144))
             screen.blit(text, [900, 50])
         elif fl:
+            # Рисуется лампа
             pygame.draw.line(screen, (255, 255, 255), [300, 0], [300, 250], 5)
             pygame.draw.rect(screen, (255, 255, 255), (275, 250, 50, 15))
             pygame.draw.circle(screen, (222, 218, 144), (300, 500), 50)
@@ -203,14 +228,14 @@ class Main_Hero(pygame.sprite.Sprite):
     def move(self, wh):
         # Осуществление движения персонажа
         if wh == 'a':
-            self.ball_vel.x = -7
+            self.ball_vel.x = -9
         elif wh == 'd':
-            self.ball_vel.x = 8
+            self.ball_vel.x = 10
         elif wh == 'w':
-            self.ball_vel.y = -3
+            self.ball_vel.y = -5
         elif wh == 's':
-            self.ball_vel.y = 5
-        # Персонаж не может зайти за поле
+            self.ball_vel.y = 7
+        # Персонаж не может зайти за поле, т к он находится в темном кубе
         if self.ballrect.top < 0 and self.ball_vel.y < 0:
             self.ball_vel.y *= -1
         elif self.ballrect.bottom > screen.get_height() and self.ball_vel.y > 0:
@@ -221,17 +246,37 @@ class Main_Hero(pygame.sprite.Sprite):
             self.ball_vel.x *= -1
 
 
+# Начало игры. Появление персонажа
 def Game_Start():
-    # Начало игры. Появление персонажа
+    # Загрузка музыки
+    pygame.mixer.music.load('fon.mp3')
+    # Установление громкости
+    pygame.mixer.music.set_volume(0.1)
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     running = True
+    # Вызываем класс героя
     HERO = Main_Hero()
     clock = pygame.time.Clock()
+    # Запуск музыки
+    pygame.mixer.music.play(-1, 0.0)
+    mas = ['Darkness swept my world centuries ago.',
+           'My ancestord told me that.',
+           ' ',
+           'But what is the light?',
+           'Where is he?',
+           ' ',
+           'I whant to find him..']
+    # Получение размеров поля
+    surface = pygame.display.get_surface()
+    x, y = surface.get_width(), surface.get_height()
+    font = pygame.font.SysFont('monaco', 34)
     while running:
+        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
+                # перемещение героя
                 if event.key == K_w:
                     HERO.move('w')
                 elif event.key == K_s:
@@ -245,9 +290,13 @@ def Game_Start():
         coords = pygame.mouse.get_pos()
         HERO.move(coords)
         HERO.INIT_PLAY(clock.tick() / 1000)
+        rect = pygame.Surface((x - 0-0, 200), pygame.SRCALPHA, 32)
+        rect.fill((200, 200, 207, 50))
+        screen.blit(rect, (0, y - 200))
         pygame.display.flip()
 
 
+# Инициализация игры, запуск первой функции
 def main():
     init_window()
     Game_Start()
