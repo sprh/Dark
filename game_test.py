@@ -115,7 +115,8 @@ def HISTORY():
                     # Если после того, как вся истрия появилась, игрок нажимает на любую кнопку,
                     #  он переходит к началу игры
                     if not fl and len(mas_true) == 0 and len(st) == len(mas):
-                        Game_Start()
+                        # Переход к рассказу персонажа о свете
+                        HISTORY_CONTINUED()
             elif event.type == QUIT:
                 running = False
         if len(mas_true) == 0 and len(st) == len(mas):
@@ -155,6 +156,66 @@ def HISTORY():
                 st = ''
                 mas = mas_true.pop(0)
                 coord[1] += 30
+        pygame.display.flip()
+
+
+def HISTORY_CONTINUED():
+    # загрузка звука печатания на клавиатуре
+    pygame.mixer.music.load('keyboard.mp3')
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    running = True
+    # установление шрифта
+    font = pygame.font.SysFont('monaco', 45)
+    mas = 'Darkness swept my world centuries ago.'
+    mas_true = ['My ancestord told me that.',
+                ' ',
+                'But what is the light?',
+                'Where is he?',
+                ' ',
+                'I whant to find him.. ']
+    texts = ['Darkness swept my world centuries ago.'] + mas_true
+    coord = [400, 240]
+    st = ''
+    fl = True
+    # запуск звуковой дорожки. параметр -1 означает, что воспроизводится она бесконечное количество
+    # раз
+    pygame.mixer.music.play(-1, 0.0)
+    # Установление громкости
+    pygame.mixer.music.set_volume(0.1)
+    while running:
+        if len(st) != len(mas):
+            st += mas[len(st)]
+            time.sleep(0.05)
+        # Текст
+        print(st)
+        text = font.render(st, True, (255, 255, 255))
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
+                else:
+                    # Если после того, как вся истрия появилась, игрок нажимает на любую кнопку,
+                    #  он переходит к началу игры
+                    if not fl and len(mas_true) == 0 and len(st) == len(mas):
+                        Game_Start()
+            elif event.type == QUIT:
+                running = False
+        if len(mas_true) == 0 and len(st) == len(mas):
+            # Остановка музыки
+            pygame.mixer.music.stop()
+            time.sleep(0.5)
+            fl = False
+            time.sleep(1)
+            font1 = pygame.font.SysFont('fixedsys', 35)
+            text = font1.render('Press any key to resume', True, (222, 218, 144))
+            screen.blit(text, [900, 50])
+        elif fl:
+            # Вывод текста
+            screen.blit(text, coord)
+            if len(st) == len(mas) and len(mas_true) != 0:
+                st = ''
+                mas = mas_true.pop(0)
+                coord[1] += 50
         pygame.display.flip()
 
 
@@ -259,13 +320,6 @@ def Game_Start():
     clock = pygame.time.Clock()
     # Запуск музыки
     pygame.mixer.music.play(-1, 0.0)
-    mas = ['Darkness swept my world centuries ago.',
-           'My ancestord told me that.',
-           ' ',
-           'But what is the light?',
-           'Where is he?',
-           ' ',
-           'I whant to find him..']
     # Получение размеров поля
     surface = pygame.display.get_surface()
     x, y = surface.get_width(), surface.get_height()
@@ -299,6 +353,6 @@ def Game_Start():
 # Инициализация игры, запуск первой функции
 def main():
     init_window()
-    Game_Start()
+    HISTORY_CONTINUED()
 
 main()
