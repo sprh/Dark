@@ -1,4 +1,9 @@
-import pygame, time, threading, random, math, os
+import pygame
+import time
+import threading
+import random
+import math
+import os
 from pygame.locals import *
 from pygame.math import Vector2
 NUM = 0
@@ -8,7 +13,7 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
 
 def init_window():
-    #инициализация окна
+    # инициализация окна
     pygame.init()
     pygame.mouse.set_visible(False)
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
@@ -16,7 +21,7 @@ def init_window():
 
 
 def ACTION():
-    #начало игры
+    # начало игры
     NUM = True
     screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     # Установление шрифта
@@ -116,6 +121,7 @@ def HISTORY():
                     #  он переходит к началу игры
                     if not fl and len(mas_true) == 0 and len(st) == len(mas):
                         # Переход к рассказу персонажа о свете
+                        screen.fill((0, 0, 0))
                         HISTORY_CONTINUED()
             elif event.type == QUIT:
                 running = False
@@ -187,7 +193,6 @@ def HISTORY_CONTINUED():
             st += mas[len(st)]
             time.sleep(0.05)
         # Текст
-        print(st)
         text = font.render(st, True, (255, 255, 255))
         for event in pygame.event.get():
             if event.type == KEYDOWN:
@@ -197,7 +202,8 @@ def HISTORY_CONTINUED():
                     # Если после того, как вся истрия появилась, игрок нажимает на любую кнопку,
                     #  он переходит к началу игры
                     if not fl and len(mas_true) == 0 and len(st) == len(mas):
-                        Game_Start()
+                        screen.fill((0, 0, 0))
+                        GAME_START()
             elif event.type == QUIT:
                 running = False
         if len(mas_true) == 0 and len(st) == len(mas):
@@ -221,7 +227,7 @@ def HISTORY_CONTINUED():
 
 class Main_Hero(pygame.sprite.Sprite):
     # Класс главного персонажа
-    def __init__(self):
+    def __init__(self, pole=None):
         self.BG_COLOR = pygame.Color(0, 0, 0)
         # Сам персонаж - искра. Первый круг - ядро, второй - свечение.
         self.BALL_1 = pygame.Surface((100, 100), pygame.SRCALPHA)
@@ -250,10 +256,13 @@ class Main_Hero(pygame.sprite.Sprite):
                     ((255, 255, 255), (65, 130, 10, 10), 50),
                     ((255, 255, 255), (70, 100, 5, 5), 20)]
         # Переменные для шара
-        self.ball_pos = Vector2(275, 200)
+        surface = pygame.display.get_surface()
+        x, y = surface.get_width(), surface.get_height()
+        self.ball_pos = Vector2(x // 2 + 100, y // 2)
         self.ballrect = self.BALL_1.get_rect(center=self.ball_pos)
         self.ball_vel = Vector2(0, 0)
         self.ball_mask = pygame.mask.from_surface(self.BALL_1)
+        self.hero_fl = False
 
     def INIT_PLAY(self, cl):
         global screen
@@ -261,7 +270,6 @@ class Main_Hero(pygame.sprite.Sprite):
         self.ball_vel *= .94
         self.ball_pos += self.ball_vel
         self.ballrect.center = self.ball_pos
-        screen.fill(self.BG_COLOR)
         screen.blit(self.BALL_1, self.ballrect)
         screen.blit(self.BALL_2, self.ballrect)
         mas_1 = []
@@ -296,41 +304,176 @@ class Main_Hero(pygame.sprite.Sprite):
             self.ball_vel.y = -5
         elif wh == 's':
             self.ball_vel.y = 7
-        # Персонаж не может зайти за поле, т к он находится в темном кубе
+        # Персонаж не может зайти за поле
         if self.ballrect.top < 0 and self.ball_vel.y < 0:
             self.ball_vel.y *= -1
         elif self.ballrect.bottom > screen.get_height() and self.ball_vel.y > 0:
             self.ball_vel.y *= -1
-        if self.ballrect.left < 0 and self.ball_vel.x < 0:
-            self.ball_vel.x *= -1
-        elif self.ballrect.right > screen.get_width() and self.ball_vel.x > 0:
-            self.ball_vel.x *= -1
+        # если поле не раздеоено на 2 части (белую и черную)
+        if not self.hero_fl:
+            if self.ballrect.left < 0 and self.ball_vel.x < 0:
+                self.ball_vel.x *= -1
+            elif self.ballrect.right > screen.get_width() and self.ball_vel.x > 0:
+                self.ball_vel.x *= -1
+        # Получение размеров поля
+        surface = pygame.display.get_surface()
+        x, y = surface.get_width(), surface.get_height()
+        # если разделено
+        if self.hero_fl:
+            if self.ballrect.left < x // 2 + 70 and self.ball_vel.x < 0:
+                self.ball_vel.x *= -1
+            elif self.ballrect.right > screen.get_width() and self.ball_vel.x > 0:
+                self.ball_vel.x *= -1
+
+    def flag_change(self, fl):
+        self.hero_fl = fl
 
 
 # Начало игры. Появление персонажа
-def Game_Start():
+# класс, отвечающий за ответы света
+class print_text_master():
+    def __init__(self):
+        self.mas = ''
+        self.tt = ''
+        self.font = pygame.font.SysFont('fixedsys', 40)
+        self.mas_true = []
+        self.mas_pro = []
+
+    def change_text(self, text):
+        self.mas_pro = []
+        self.mas_true = text
+        self.tt = ''
+        self.mas = self.mas_true.pop(0)
+
+    def print_texts(self):
+        # текст печатается
+        if len(self.tt) != len(self.mas):
+            self.tt += self.mas[len(self.tt)]
+            time.sleep(0.01)
+        if len(self.tt) == len(self.mas) and len(self.mas_true) != 0:
+            self.mas = self.mas_true.pop(0)
+            self.mas_pro.append(self.tt)
+            self.tt = ''
+        if len(self.mas_pro) != 0:
+            for i in range(len(self.mas_pro)):
+                text = self.font.render(self.mas_pro[i], True, (0, 0, 0))
+                screen.blit(text, [100, 100 + 29 * i])
+        if len(self.tt) != 0:
+            text = self.font.render(self.tt, True, (0, 0, 0))
+            screen.blit(text, [100, 100 + 29 * len(self.mas_pro)])
+
+    def return_len(self):
+        # возвращает True/False в зависимости о того, напечатан ли текст полностью
+        return len(self.tt) == len(self.mas)
+
+
+# класс отвечает за тесты игрока
+class print_text_player():
+    def __init__(self):
+        self.vib = 0
+        self.mas = []
+        surface = pygame.display.get_surface()
+        self.x, self.y = surface.get_width(), surface.get_height()
+        self.font = pygame.font.SysFont('fixedsys', 40)
+        self.mas = ''
+
+    def change_vib(self, arrow):
+        # меняется выбор игрока
+        if arrow == 'left' and self.vib == 1:
+            self.vib = 0
+        elif arrow == 'right' and self.vib == 0:
+            self.vib = 1
+
+    def change_texts(self, tt):
+        # замена фраз
+        self.mas = tt
+
+    def texts(self):
+        # текст выводится на экран
+        for i in range(2):
+            for el in range(len(self.mas)):
+                text = self.font.render(self.mas[i][el], True, (199, 165, 70))
+                screen.blit(text, [self.x // 2 * i + 50, self.y - 150 + 25 * el])
+
+    def print_output(self):
+        # выделяет выбранную фразу
+        rect = pygame.Surface((self.x // 2, 200), pygame.SRCALPHA, 32)
+        rect.fill((23, 100, 255, 50))
+        if self.vib == 0:
+            screen.blit(rect, (0, self.y - 200))
+        elif self.vib == 1:
+            screen.blit(rect, (self.x // 2, self.y - 200))
+
+    def return_vib(self):
+        # возвращает выбор игрока
+        return self.vib
+
+
+# таймер для того, чтоб не было задержек
+def timer():
+   now = time.localtime(time.time())
+   return now[5]
+
+
+# Начало игры. Появление персонажа
+def GAME_START():
+    global TEXTS
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    running = True
+    surface = pygame.display.get_surface()
+    x, y = surface.get_width(), surface.get_height()
+    WHITE = (255, 255, 255)
+    surf_left = pygame.Surface((x // 2, y))
+    surf_left.fill(WHITE)
+    # Вызываем класс героя
+    HERO = Main_Hero()
+    surf_right = pygame.Surface((x // 2, y))
+    screen.blit(surf_left, (0, 0))
+    screen.blit(surf_right, (x // 2, 0))
+    HERO.flag_change(True)
+    time_now = time.localtime(time.time())[5]
+    font = pygame.font.SysFont('fixedsys', 45)
+    # подсказки. исчезнут через 8 секунд
+    text = font.render("Press -> or <- to change answer", True, (199, 165, 70))
+    text2 = font.render("Press enter to confirm your answer", True, (199, 165, 70))
+    clock = pygame.time.Clock()
+    TEXTS = print_text_player()
+    TEXTS.change_texts([('Who are you?', ' '), ('What are you?', ' ')])
+    TEXTS_master = print_text_master()
+    scene = 0
     # Загрузка музыки
     pygame.mixer.music.load('fon.mp3')
     # Установление громкости
     pygame.mixer.music.set_volume(0.1)
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-    running = True
-    # Вызываем класс героя
-    HERO = Main_Hero()
-    clock = pygame.time.Clock()
     # Запуск музыки
     pygame.mixer.music.play(-1, 0.0)
-    # Получение размеров поля
-    surface = pygame.display.get_surface()
-    x, y = surface.get_width(), surface.get_height()
-    font = pygame.font.SysFont('monaco', 34)
+    # тексты света и героя в зависимости от номера сцены
+    tab = {1: (["Are you serious? 'What' am I?", ' '],
+               [('Sorry.. Who are you', ''),
+                ("I didn't know how to address you.", "So who are you?")]),
+           2: (["I'm LIGHT! Why were you looking for me?", ' '],
+               [('I know all about dark. But I had never seen you',
+                 'before. Can you tell me about yourself?'),
+                ("I'm tired of living in the dark.", ' ')]),
+           3: (["Oh, you are very brave. But what do you", "want to know?", ' '],
+               [("I want to know all.", ' '),
+                ("I don't know", ' ')]),
+           4: (["Why? I think that dark more interesting", "than me.", ' '],
+               [("I don't think so.", ' '),
+                ("But I don't know you..", ' ')]),
+           6: (["Ok, I understand you and I tell you.", "Light is in everyone who is ready to see ",
+                "all. You know? You are just like me.", "You are light.", ' '],
+               [' ', ' ']),
+           5: (["You haven't seen me until this point ", "because I don't open myself to such ",
+                "creators. Are you really think that you", "deserve? Huh! Maybe it's too early!",
+                ' '],
+               [' ', ' '])}
     while running:
-        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
-                # перемещение героя
+                    # перемещение героя
                 if event.key == K_w:
                     HERO.move('w')
                 elif event.key == K_s:
@@ -339,20 +482,54 @@ def Game_Start():
                     HERO.move('a')
                 elif event.key == K_d:
                     HERO.move('d')
+                if TEXTS_master.return_len():
+                    if event.key == K_RIGHT:
+                        TEXTS.change_vib('right')
+                    elif event.key == K_LEFT:
+                        TEXTS.change_vib('left')
+                    elif event.key == K_RETURN:
+                        if scene == 0 and TEXTS.return_vib() == 0:
+                            scene += 1
+                        if scene == 2 and TEXTS.return_vib() == 1:
+                            scene += 1
+                        if scene == 3 and TEXTS.return_vib() == 0:
+                            scene += 3
+                        if scene != 5 and scene != 6:
+                            scene += 1
+                        TEXTS_master.change_text(tab[scene][0])
+                        TEXTS.change_texts(tab[scene][1])
             elif event.type == QUIT:
                 running = False
-        coords = pygame.mouse.get_pos()
-        HERO.move(coords)
+        screen.blit(surf_left, (0, 0))
+        screen.blit(surf_right, (x // 2, 0))
         HERO.INIT_PLAY(clock.tick() / 1000)
-        rect = pygame.Surface((x - 0-0, 200), pygame.SRCALPHA, 32)
-        rect.fill((200, 200, 207, 50))
-        screen.blit(rect, (0, y - 200))
+        # в последних сценах нет фраз игрока
+        if -1 < scene < 5:
+            TEXTS.print_output()
+            TEXTS.texts()
+        TEXTS_master.print_texts()
+        if scene in [5, 6]:
+            time_now = time.localtime(time.time())[5]
+            if scene == 5:
+                scene = -2
+            else:
+                scene = -1
+        if scene < 0 and abs(time_now - timer()) > 10:
+            if scene == -2:
+                screen.fill((0, 0, 0))
+            elif scene == -1:
+                screen.fill((255, 255, 255))
+        if abs(time_now - timer()) < 8:
+            screen.blit(text, [x - 550, 60])
+            screen.blit(text2, [x - 550, 100])
         pygame.display.flip()
+    pygame.display.update()
 
 
 # Инициализация игры, запуск первой функции
 def main():
     init_window()
-    HISTORY_CONTINUED()
+    ACTION()
+
 
 main()
