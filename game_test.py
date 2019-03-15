@@ -470,6 +470,8 @@ def GAME_START():
                [' ', ' '])}
     while running:
         for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     running = False
@@ -498,8 +500,6 @@ def GAME_START():
                             scene += 1
                         TEXTS_master.change_text(tab[scene][0])
                         TEXTS.change_texts(tab[scene][1])
-            elif event.type == QUIT:
-                running = False
         screen.blit(surf_left, (0, 0))
         screen.blit(surf_right, (x // 2, 0))
         HERO.INIT_PLAY(clock.tick() / 1000)
